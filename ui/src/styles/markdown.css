@@ -1,0 +1,103 @@
+/* src/styles/markdown.css */
+.markdown { line-height: 1.55; }
+.markdown p { margin: 0.5rem 0; }
+.markdown ul, .markdown ol { padding-left: 1.25rem; margin: 0.5rem 0; }
+.markdown li { margin: 0.25rem 0; }
+.markdown a { text-decoration: underline; }
+.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  background: #f3f4f6;
+  padding: 0.1rem 0.3rem; border-radius: 4px;
+}
+.markdown pre code {
+  display: block; background: #0f172a; color: #e5e7eb;
+  padding: 0.75rem; border-radius: 6px; overflow-x: auto;
+}
+
+/* Enhanced markdown styling for better readability */
+.markdown { 
+  line-height: 1.6; 
+  color: inherit;
+}
+
+.markdown p { 
+  margin: 0.75rem 0; 
+  line-height: 1.6;
+}
+
+.markdown ul, .markdown ol { 
+  padding-left: 1.5rem; 
+  margin: 0.75rem 0; 
+}
+
+.markdown li { 
+  margin: 0.25rem 0; 
+  line-height: 1.5;
+}
+
+.markdown a { 
+  text-decoration: underline; 
+  color: #2563eb;
+}
+
+.markdown a:hover {
+  color: #1d4ed8;
+}
+
+.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  background: #f1f5f9;
+  color: #e11d48;
+  padding: 0.125rem 0.25rem; 
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.markdown pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.markdown pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+}
+
+.markdown strong {
+  font-weight: 600;
+  color: inherit;
+}
+
+.markdown em {
+  font-style: italic;
+  color: inherit;
+}
+
+.markdown blockquote {
+  border-left: 4px solid #e2e8f0;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Prose styling for better readability */
+.prose {
+  color: inherit;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: inherit;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.prose h1 { font-size: 1.5rem; }
+.prose h2 { font-size: 1.25rem; }
+.prose h3 { font-size: 1.125rem; }
