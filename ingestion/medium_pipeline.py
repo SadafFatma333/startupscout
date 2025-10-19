@@ -26,7 +26,7 @@ def run_pipeline():
         logger.error(f"Enrichment failed: {e}")
         return
 
-    logger.info("✅ Medium pipeline completed successfully.")
+    logger.info("Medium pipeline completed successfully.")
 
 
 if __name__ == "__main__":

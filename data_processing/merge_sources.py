@@ -82,7 +82,7 @@ def merge_sources():
     with open(OUTPUT_PATH, "w") as f:
         json.dump(merged_list, f, indent=2, ensure_ascii=False)
 
-    logger.info(f"✅ Saved merged dataset → {OUTPUT_PATH}")
+    logger.info(f"Saved merged dataset → {OUTPUT_PATH}")
     return merged_list
 
 

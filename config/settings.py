@@ -81,3 +81,10 @@ else:
 # -----------------------
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "changeme")
 REDIS_URL = os.getenv("REDIS_URL")
+
+# LangFuse configuration
+LANGFUSE_ENABLED = os.getenv("LANGFUSE_ENABLED", "false").lower() in ("1", "true", "yes")
+LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "").strip()
+LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY", "").strip()
+LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY", "").strip()
+LANGFUSE_SAMPLING_RATE = float(os.getenv("LANGFUSE_SAMPLING_RATE", "0.25"))  # 25% default

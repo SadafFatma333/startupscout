@@ -37,11 +37,11 @@ def process_embeddings(batch_size=20):
 
         conn.commit()
         processed_total += len(rows)
-        print(f"✅ Processed batch of {len(rows)} rows (total: {processed_total})")
+        print(f"Processed batch of {len(rows)} rows (total: {processed_total})")
 
     cur.close()
     conn.close()
-    print(f"🎉 Finished processing embeddings. Total: {processed_total} rows.")
+    print(f"Finished processing embeddings. Total: {processed_total} rows.")
 
 if __name__ == "__main__":
     process_embeddings()

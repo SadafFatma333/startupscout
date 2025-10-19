@@ -28,7 +28,7 @@ def force_cursor_save():
         
         # If we only have 10 entries, the file is not synced
         if len(data) == 10:
-            print("\n❌ File only has 10 entries - Cursor sync issue detected!")
+            print("\nFile only has 10 entries - Cursor sync issue detected!")
             print("This means Cursor is showing you unsaved changes.")
             print("\nTo fix this:")
             print("1. In Cursor, press Cmd+S to save the file")
@@ -36,11 +36,11 @@ def force_cursor_save():
             print("3. Or restart Cursor")
             return False
         else:
-            print(f"✅ File has {len(data)} entries - sync is working!")
+            print(f"File has {len(data)} entries - sync is working!")
             return True
             
     except json.JSONDecodeError as e:
-        print(f"❌ JSON parsing error: {e}")
+        print(f"JSON parsing error: {e}")
         return False
 
 if __name__ == "__main__":

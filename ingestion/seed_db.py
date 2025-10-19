@@ -60,12 +60,12 @@ def seed_database(json_path=None, wipe_existing=True):
                 entry.get("stage", "")
             ))
         except Exception as e:
-            print(f"❌ Error inserting entry {entry.get('title', 'Unknown')}: {e}")
+            print(f"Error inserting entry {entry.get('title', 'Unknown')}: {e}")
 
     conn.commit()
     cur.close()
     conn.close()
-    print(f"✅ Inserted {len(data)} records into PostgreSQL database.")
+    print(f"Inserted {len(data)} records into PostgreSQL database.")
 
 if __name__ == "__main__":
     seed_database()
