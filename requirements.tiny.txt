@@ -1,0 +1,5 @@
+# Tiny requirements for Railway deployment - absolute minimum
+fastapi==0.117.1
+uvicorn==0.37.0
+psycopg[binary]>=3.2.0
+python-dotenv>=1.0.0

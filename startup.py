@@ -6,39 +6,6 @@ Downloads necessary data files from S3 before starting the main application.
 
 import os
 import sys
-import time
-from pathlib import Path
-from utils.s3_storage import get_data_file
-
-def download_required_files():
-    """Download required data files from S3."""
-    print("🔄 Downloading data files from S3...")
-    
-    required_files = [
-        "startup_posts_clean.json",
-        "startup_data.json"
-    ]
-    
-    downloaded_files = []
-    failed_files = []
-    
-    for filename in required_files:
-        print(f"📥 Downloading {filename}...")
-        local_path = get_data_file(filename)
-        
-        if local_path:
-            downloaded_files.append(filename)
-            print(f"✅ Downloaded {filename}")
-        else:
-            failed_files.append(filename)
-            print(f"❌ Failed to download {filename}")
-    
-    if failed_files:
-        print(f"⚠️  Warning: {len(failed_files)} files failed to download: {failed_files}")
-        print("   The app will start but some features may not work.")
-    
-    print(f"✅ Startup complete: {len(downloaded_files)} files ready")
-    return len(downloaded_files) > 0
 
 def main():
     """Main startup function."""
@@ -48,10 +15,29 @@ def main():
     if os.getenv('RAILWAY_ENVIRONMENT'):
         print("🌐 Running in Railway production environment")
         
-        # Download data files from S3
-        if not download_required_files():
-            print("⚠️  Warning: Some data files could not be downloaded")
-            print("   Continuing startup anyway...")
+        # Try to download data files from S3 if credentials are available
+        try:
+            from utils.s3_storage import get_data_file
+            
+            required_files = ["startup_posts_clean.json", "startup_data.json"]
+            downloaded_count = 0
+            
+            for filename in required_files:
+                local_path = get_data_file(filename)
+                if local_path:
+                    downloaded_count += 1
+                    print(f"✅ Downloaded {filename}")
+                else:
+                    print(f"⚠️  Could not download {filename}")
+            
+            if downloaded_count > 0:
+                print(f"✅ Downloaded {downloaded_count} data files from S3")
+            else:
+                print("⚠️  No data files downloaded - app will run with limited functionality")
+                
+        except Exception as e:
+            print(f"⚠️  S3 download failed: {e}")
+            print("   App will start with limited functionality")
     
     else:
         print("🏠 Running in local development environment")

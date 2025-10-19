@@ -1,9 +1,9 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pip install -r requirements.minimal.txt && python3 -m nltk.downloader punkt"
+buildCommand = "pip install -r requirements.tiny.txt"
 
 [deploy]
-startCommand = "python3 startup.py"
+startCommand = "python3 startup-simple.py"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
