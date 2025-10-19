@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 
 import { http, toMessage } from "../lib/http";
 import ErrorBanner from "../components/ErrorBanner";
+import DemoCards from "../components/DemoCards";
 import "../styles/markdown.css";
 
 type AskResponse = {
@@ -32,6 +33,7 @@ export default function Chat() {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const [showDemoCards, setShowDemoCards] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +60,8 @@ export default function Chat() {
         ts: Date.now(),
       },
     ]);
+    // Show demo cards for fresh chat
+    setShowDemoCards(true);
   }, []);
 
   // Persist on every change
@@ -70,11 +74,17 @@ export default function Chat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [turns, loading]);
 
+  const handleDemoQuestion = (question: string) => {
+    setInput(question);
+    setShowDemoCards(false);
+  };
+
   async function send() {
     const q = input.trim();
     if (!q || loading) return;
     setErr("");
     setInput("");
+    setShowDemoCards(false);
 
     setTurns((t) => [...t, { role: "user", content: q, ts: Date.now() }]);
     setLoading(true);
@@ -269,6 +279,11 @@ function MessageBubble({
           </div>
         )}
       </div>
+
+      <DemoCards 
+        onQuestionClick={handleDemoQuestion}
+        isVisible={showDemoCards}
+      />
     </div>
   );
 }
