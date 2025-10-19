@@ -12,7 +12,7 @@ def main():
     
     # Start the main application directly
     print("🎯 Starting FastAPI application...")
-    os.execv(sys.executable, [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", os.getenv("PORT", "8000")])
+    os.execv(sys.executable, [sys.executable, "-m", "uvicorn", "app.main-minimal:app", "--host", "0.0.0.0", "--port", os.getenv("PORT", "8000")])
 
 if __name__ == "__main__":
     main()
