@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pip install -r requirements.tiny.txt"
+buildCommand = "pip install -r requirements.txt"
 
 [deploy]
 startCommand = "python3 startup-simple.py"
