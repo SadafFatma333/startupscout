@@ -40,28 +40,33 @@ export default function Chat() {
   // Load history once
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
+    let hasHistory = false;
+    
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as ChatTurn[];
-        if (Array.isArray(parsed) && parsed.length) {
+        if (Array.isArray(parsed) && parsed.length > 1) { // More than just system message
           setTurns(parsed);
-          return;
+          hasHistory = true;
         }
       } catch {
         /* ignore */
       }
     }
-    // default system message
-    setTurns([
-      {
-        role: "system",
-        content:
-          "Ask anything about growth, pricing, fundraising, or product decisions. I'll pull from real startup cases.",
-        ts: Date.now(),
-      },
-    ]);
-    // Show demo cards for fresh chat
-    setShowDemoCards(true);
+    
+    if (!hasHistory) {
+      // default system message
+      setTurns([
+        {
+          role: "system",
+          content:
+            "Ask anything about growth, pricing, fundraising, or product decisions. I'll pull from real startup cases.",
+          ts: Date.now(),
+        },
+      ]);
+      // Show demo cards for fresh chat
+      setShowDemoCards(true);
+    }
   }, []);
 
   // Persist on every change
@@ -128,19 +133,33 @@ export default function Chat() {
       },
     ]);
     setErr("");
+    setShowDemoCards(true); // Show demo cards after clearing history
+  }
+
+  function showDemoCards() {
+    setShowDemoCards(true);
   }
 
   return (
     <section className="flex flex-col h-[calc(100vh-6rem)] bg-white">
       <div className="mb-4 flex items-center justify-between border-b pb-3">
         <h1 className="text-2xl font-bold text-gray-900">StartupScout Chat</h1>
-        <button
-          onClick={clearHistory}
-          className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          disabled={loading}
-        >
-          Clear History
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={showDemoCards}
+            className="text-sm px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            disabled={loading}
+          >
+            Demo Questions
+          </button>
+          <button
+            onClick={clearHistory}
+            className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={loading}
+          >
+            Clear History
+          </button>
+        </div>
       </div>
 
       <div
