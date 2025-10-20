@@ -156,6 +156,53 @@ def health_check():
     return {"status": "ok", "uptime_sec": uptime, "db": db_status}
 
 
+@app.post("/fix-schema")
+def fix_schema():
+    """Fix database schema by adding missing columns"""
+    if POOL is None:
+        raise HTTPException(status_code=503, detail="Database unavailable.")
+    
+    try:
+        with POOL.connection() as conn, conn.cursor() as cur:
+            # Add missing columns if they don't exist
+            columns_to_add = [
+                "ALTER TABLE decisions ADD COLUMN IF NOT EXISTS summary TEXT",
+                "ALTER TABLE decisions ADD COLUMN IF NOT EXISTS content TEXT", 
+                "ALTER TABLE decisions ADD COLUMN IF NOT EXISTS comments TEXT",
+                "ALTER TABLE decisions ADD COLUMN IF NOT EXISTS url TEXT",
+                "ALTER TABLE decisions ADD COLUMN IF NOT EXISTS fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+            ]
+            
+            for sql in columns_to_add:
+                cur.execute(sql)
+            
+            conn.commit()
+            
+            # Check current schema
+            cur.execute("""
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'decisions' 
+                ORDER BY ordinal_position
+            """)
+            columns = cur.fetchall()
+            
+            # Check record count
+            cur.execute("SELECT COUNT(*) FROM decisions")
+            count = cur.fetchone()[0]
+            
+            return {
+                "status": "success",
+                "message": "Schema updated successfully",
+                "columns": [{"name": col[0], "type": col[1]} for col in columns],
+                "record_count": count
+            }
+            
+    except Exception as e:
+        logger.error(f"Schema fix failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Schema fix failed: {str(e)}")
+
+
 @app.get("/stats")
 def stats():
     return {
