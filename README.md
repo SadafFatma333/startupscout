@@ -97,7 +97,8 @@ graph TB
 
 ## **Deployment Status**
 
-✅ **Currently Deployed**: 
+✅ **Currently Deployed**:
+
 - **Backend**: Railway (https://startupscout.up.railway.app)
 - **Database**: Neon PostgreSQL with pgvector support
 - **Data**: 3,954 startup decisions with vector embeddings
@@ -105,6 +106,7 @@ graph TB
 - **Image Size**: Optimized to ~500MB (down from 8.6GB)
 
 ### **Database Migration**
+
 - **From**: Railway PostgreSQL → **To**: Neon PostgreSQL
 - **Reason**: Better pgvector support and performance
 - **Data**: Successfully migrated all tables and data

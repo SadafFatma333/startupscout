@@ -176,9 +176,22 @@ def fix_schema():
             for sql in columns_to_add:
                 cur.execute(sql)
             
-            # Create all missing indexes (matching local database)
+            # Ensure required extensions exist
+            extensions_to_create = [
+                "CREATE EXTENSION IF NOT EXISTS vector",
+                "CREATE EXTENSION IF NOT EXISTS pg_trgm"
+            ]
+            
+            for sql in extensions_to_create:
+                try:
+                    cur.execute(sql)
+                    print(f"Created extension: {sql.split()[4]}")
+                except Exception as e:
+                    print(f"Extension creation failed: {e}")
+            
+            # Create all missing indexes (matching local database exactly)
             indexes_to_create = [
-                # Vector indexes for similarity search
+                # Vector indexes for similarity search (crucial for performance)
                 "CREATE INDEX IF NOT EXISTS decisions_embedding_cos_idx ON decisions USING ivfflat (embedding vector_cosine_ops) WITH (lists='100')",
                 "CREATE INDEX IF NOT EXISTS decisions_embedding_idx ON decisions USING ivfflat (embedding) WITH (lists='100')",
                 
@@ -192,7 +205,8 @@ def fix_schema():
                 
                 # Other useful indexes
                 "CREATE INDEX IF NOT EXISTS decisions_title_source_idx ON decisions USING btree (title, source)",
-                "CREATE UNIQUE INDEX IF NOT EXISTS decisions_url_uk ON decisions USING btree (url) WHERE url IS NOT NULL"
+                "CREATE UNIQUE INDEX IF NOT EXISTS decisions_url_uk ON decisions USING btree (url) WHERE url IS NOT NULL",
+                "CREATE UNIQUE INDEX IF NOT EXISTS decisions_nullurl_title_source_uidx ON decisions USING btree (title, source) WHERE (url IS NULL)"
             ]
             
             for sql in indexes_to_create:
