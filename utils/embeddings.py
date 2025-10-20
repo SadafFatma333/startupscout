@@ -54,8 +54,14 @@ def _init_openai():
         raise RuntimeError("OPENAI_API_KEY not set but EMBEDDING_BACKEND=openai. Please set OPENAI_API_KEY environment variable.")
     logger.info(f"Initializing OpenAI client with API key: {OPENAI_API_KEY[:10]}...")
     from openai import OpenAI  # Lazy import
-    _openai_client = OpenAI(api_key=OPENAI_API_KEY)
-    logger.info("OpenAI client initialized successfully")
+    import httpx
+    # Configure client with longer timeout and better error handling
+    _openai_client = OpenAI(
+        api_key=OPENAI_API_KEY,
+        timeout=httpx.Timeout(60.0, connect=10.0),  # 60s total, 10s connect
+        http_client=httpx.Client(timeout=httpx.Timeout(60.0, connect=10.0))
+    )
+    logger.info("OpenAI client initialized successfully with custom timeout")
     return _openai_client
 
 
@@ -77,15 +83,26 @@ def get_embedding_dim() -> int:
 # ------------------------------------------------------------------------------
 @lru_cache(maxsize=2048)
 def _embed_openai_cached(text: str) -> Tuple[List[float], str]:
-    try:
-        client = _init_openai()
-        logger.info(f"Making OpenAI API call for text: {text[:50]}...")
-        resp = client.embeddings.create(input=text, model=_OPENAI_MODEL)
-        logger.info(f"OpenAI API call successful, embedding length: {len(resp.data[0].embedding)}")
-        return resp.data[0].embedding, _OPENAI_MODEL
-    except Exception as e:
-        logger.error(f"OpenAI API call failed: {type(e).__name__}: {str(e)}")
-        raise
+    import time
+    max_retries = 3
+    retry_delay = 1.0
+    
+    for attempt in range(max_retries):
+        try:
+            client = _init_openai()
+            logger.info(f"Making OpenAI API call for text: {text[:50]}... (attempt {attempt + 1}/{max_retries})")
+            resp = client.embeddings.create(input=text, model=_OPENAI_MODEL)
+            logger.info(f"OpenAI API call successful, embedding length: {len(resp.data[0].embedding)}")
+            return resp.data[0].embedding, _OPENAI_MODEL
+        except Exception as e:
+            logger.error(f"OpenAI API call failed (attempt {attempt + 1}/{max_retries}): {type(e).__name__}: {str(e)}")
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                logger.error("All retry attempts failed")
+                raise
 
 
 @lru_cache(maxsize=2048)
