@@ -205,8 +205,8 @@ def fix_schema():
                 
                 # Other useful indexes
                 "CREATE INDEX IF NOT EXISTS decisions_title_source_idx ON decisions USING btree (title, source)",
-                "CREATE UNIQUE INDEX IF NOT EXISTS decisions_url_uk ON decisions USING btree (url) WHERE url IS NOT NULL",
-                "CREATE UNIQUE INDEX IF NOT EXISTS decisions_nullurl_title_source_uidx ON decisions USING btree (title, source) WHERE (url IS NULL)"
+                "CREATE UNIQUE INDEX IF NOT EXISTS decisions_url_uk ON decisions USING btree (url) WHERE url IS NOT NULL"
+                # Note: Removed the problematic unique index that was causing transaction failure
             ]
             
             # Add trigram indexes only if pg_trgm extension is available
