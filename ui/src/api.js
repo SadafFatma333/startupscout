@@ -29,7 +29,7 @@ async function jsonFetch(path, { method = "GET", body, headers = {} } = {}) {
   return data;
 }
 
-import { normalizeAsk } from "./lib/normalize";
+import { normalizeAsk } from "./lib/normalize.js";
 
 export const api = {
   ask: async (question) => {
