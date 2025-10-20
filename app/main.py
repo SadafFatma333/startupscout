@@ -176,18 +176,31 @@ def fix_schema():
             for sql in columns_to_add:
                 cur.execute(sql)
             
-            # Create vector index for fast similarity search (if not exists)
-            try:
-                cur.execute("CREATE INDEX IF NOT EXISTS decisions_embedding_idx ON decisions USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)")
-                print("Vector index created successfully")
-            except Exception as e:
-                print(f"Vector index creation failed (might already exist): {e}")
-                # Try alternative index type
+            # Create all missing indexes (matching local database)
+            indexes_to_create = [
+                # Vector indexes for similarity search
+                "CREATE INDEX IF NOT EXISTS decisions_embedding_cos_idx ON decisions USING ivfflat (embedding vector_cosine_ops) WITH (lists='100')",
+                "CREATE INDEX IF NOT EXISTS decisions_embedding_idx ON decisions USING ivfflat (embedding) WITH (lists='100')",
+                
+                # Trigram indexes for text search
+                "CREATE INDEX IF NOT EXISTS decisions_content_trgm ON decisions USING gin (content gin_trgm_ops)",
+                "CREATE INDEX IF NOT EXISTS decisions_decision_trgm ON decisions USING gin (decision gin_trgm_ops)", 
+                "CREATE INDEX IF NOT EXISTS decisions_title_trgm ON decisions USING gin (title gin_trgm_ops)",
+                
+                # Full-text search index
+                "CREATE INDEX IF NOT EXISTS decisions_tsv_gin ON decisions USING gin (tsv)",
+                
+                # Other useful indexes
+                "CREATE INDEX IF NOT EXISTS decisions_title_source_idx ON decisions USING btree (title, source)",
+                "CREATE UNIQUE INDEX IF NOT EXISTS decisions_url_uk ON decisions USING btree (url) WHERE url IS NOT NULL"
+            ]
+            
+            for sql in indexes_to_create:
                 try:
-                    cur.execute("CREATE INDEX IF NOT EXISTS decisions_embedding_idx ON decisions USING hnsw (embedding vector_cosine_ops)")
-                    print("HNSW vector index created successfully")
-                except Exception as e2:
-                    print(f"Alternative vector index also failed: {e2}")
+                    cur.execute(sql)
+                    print(f"Created index: {sql.split()[5]}")  # Extract index name
+                except Exception as e:
+                    print(f"Index creation failed (might already exist): {e}")
             
             conn.commit()
             
@@ -204,20 +217,29 @@ def fix_schema():
             cur.execute("SELECT COUNT(*) FROM decisions")
             count = cur.fetchone()[0]
             
-            # Check for indexes on embedding column
-            cur.execute("""
-                SELECT indexname, indexdef 
-                FROM pg_indexes 
-                WHERE tablename = 'decisions' AND indexdef LIKE '%embedding%'
-            """)
-            indexes = cur.fetchall()
+            # Check all indexes
+            cur.execute("SELECT indexname FROM pg_indexes WHERE tablename = 'decisions' ORDER BY indexname")
+            all_indexes = [row[0] for row in cur.fetchall()]
+            
+            # Check extensions
+            cur.execute("SELECT extname FROM pg_extension ORDER BY extname")
+            extensions = [row[0] for row in cur.fetchall()]
+            
+            # Check embeddings and tsv counts
+            cur.execute("SELECT COUNT(*) FROM decisions WHERE embedding IS NOT NULL")
+            with_embeddings = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM decisions WHERE tsv IS NOT NULL")
+            with_tsv = cur.fetchone()[0]
             
             return {
                 "status": "success",
                 "message": "Schema updated successfully",
                 "columns": [{"name": col[0], "type": col[1]} for col in columns],
                 "record_count": count,
-                "vector_indexes": [{"name": idx[0], "definition": idx[1]} for idx in indexes]
+                "with_embeddings": with_embeddings,
+                "with_tsv": with_tsv,
+                "indexes": all_indexes,
+                "extensions": extensions
             }
             
     except Exception as e:
