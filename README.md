@@ -12,11 +12,11 @@ StartupScout is an advanced startup decision intelligence platform that provides
 
 ## **Live Demo**
 
-**[Try StartupScout Live](https://your-startupscout-app.railway.app)**
+**[Try StartupScout Live](https://startupscout.up.railway.app)**
 
-- **API Documentation**: [https://your-startupscout-app.railway.app/docs](https://your-startupscout-app.railway.app/docs)
-- **Health Check**: [https://your-startupscout-app.railway.app/health](https://your-startupscout-app.railway.app/health)
-- **Metrics**: [https://your-startupscout-app.railway.app/metrics](https://your-startupscout-app.railway.app/metrics)
+- **API Documentation**: [https://startupscout.up.railway.app/docs](https://startupscout.up.railway.app/docs)
+- **Health Check**: [https://startupscout.up.railway.app/health](https://startupscout.up.railway.app/health)
+- **Metrics**: [https://startupscout.up.railway.app/metrics](https://startupscout.up.railway.app/metrics)
 
 ## **Performance Metrics**
 
@@ -32,17 +32,16 @@ StartupScout is an advanced startup decision intelligence platform that provides
 
 ### **Advanced RAG Pipeline**
 
-- **Multi-Modal Search**: Semantic embeddings + keyword search + BM25 + cross-encoder reranking
+- **Multi-Modal Search**: Semantic embeddings + keyword search + BM25 + enhanced keyword reranking
 - **Hybrid Scoring**: Combines multiple ranking signals for optimal relevance
 - **Evidence Bonus**: Rewards documents with multiple keyword matches
 - **Recency Scoring**: Prioritizes recent content
+- **OpenAI Embeddings**: Production-quality text-embedding-3-small for semantic search
 
 ### **Rich Data Sources**
 
-- **Reddit**: Startup discussions and insights
-- **Medium**: Professional startup articles
-- **Indie Hackers**: Entrepreneur stories and metrics
-- **YC Library**: Y Combinator startup resources
+- **Reddit**: Startup discussions and insights from r/startups and related communities
+- **Medium**: Professional startup articles and case studies
 
 ### **Production-Ready Security**
 
@@ -81,15 +80,13 @@ graph TB
 
     J[Reddit API] --> K[Data Ingestion]
     L[Medium API] --> K
-    M[Indie Hackers] --> K
-    N[YC Library] --> K
 
     K --> C
 
     subgraph "RAG Pipeline"
         O[Query Embedding] --> P[Vector Search]
         P --> Q[Keyword Search]
-        Q --> R[Cross-Encoder Reranking]
+        Q --> R[Enhanced Keyword Reranking]
         R --> S[Context Building]
         S --> T[LLM Generation]
     end
@@ -98,14 +95,29 @@ graph TB
     T --> A
 ```
 
+## **Deployment Status**
+
+✅ **Currently Deployed**: 
+- **Backend**: Railway (https://startupscout.up.railway.app)
+- **Database**: Neon PostgreSQL with pgvector support
+- **Data**: 3,954 startup decisions with vector embeddings
+- **Frontend**: Vercel (configured for Railway backend)
+- **Image Size**: Optimized to ~500MB (down from 8.6GB)
+
+### **Database Migration**
+- **From**: Railway PostgreSQL → **To**: Neon PostgreSQL
+- **Reason**: Better pgvector support and performance
+- **Data**: Successfully migrated all tables and data
+- **Tables**: users, decisions, rag_events, rag_feedback, rag_items, chat_sessions, chat_messages
+
 ## **Quick Start**
 
 ### **Prerequisites**
 
 - Python 3.10+
 - Node.js 18+
-- PostgreSQL 15+
-- Redis 6+
+- PostgreSQL 15+ (or Docker)
+- Redis 6+ (optional for local development)
 
 ### **1. Clone and Setup**
 
