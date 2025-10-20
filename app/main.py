@@ -178,9 +178,17 @@ def fix_schema():
             
             # Ensure required extensions exist
             extensions_to_create = [
-                "CREATE EXTENSION IF NOT EXISTS vector",
-                "CREATE EXTENSION IF NOT EXISTS pg_trgm"
+                "CREATE EXTENSION IF NOT EXISTS vector"
             ]
+            
+            # Try to create pg_trgm extension (may not be available on some managed databases)
+            try:
+                cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+                print("Created extension: pg_trgm")
+                pg_trgm_available = True
+            except Exception as e:
+                print(f"pg_trgm extension not available: {e}")
+                pg_trgm_available = False
             
             for sql in extensions_to_create:
                 try:
@@ -195,19 +203,23 @@ def fix_schema():
                 "CREATE INDEX IF NOT EXISTS decisions_embedding_cos_idx ON decisions USING ivfflat (embedding vector_cosine_ops) WITH (lists='100')",
                 "CREATE INDEX IF NOT EXISTS decisions_embedding_idx ON decisions USING ivfflat (embedding) WITH (lists='100')",
                 
-                # Trigram indexes for text search
-                "CREATE INDEX IF NOT EXISTS decisions_content_trgm ON decisions USING gin (content gin_trgm_ops)",
-                "CREATE INDEX IF NOT EXISTS decisions_decision_trgm ON decisions USING gin (decision gin_trgm_ops)", 
-                "CREATE INDEX IF NOT EXISTS decisions_title_trgm ON decisions USING gin (title gin_trgm_ops)",
-                
-                # Full-text search index
-                "CREATE INDEX IF NOT EXISTS decisions_tsv_gin ON decisions USING gin (tsv)",
-                
                 # Other useful indexes
                 "CREATE INDEX IF NOT EXISTS decisions_title_source_idx ON decisions USING btree (title, source)",
                 "CREATE UNIQUE INDEX IF NOT EXISTS decisions_url_uk ON decisions USING btree (url) WHERE url IS NOT NULL",
                 "CREATE UNIQUE INDEX IF NOT EXISTS decisions_nullurl_title_source_uidx ON decisions USING btree (title, source) WHERE (url IS NULL)"
             ]
+            
+            # Add trigram indexes only if pg_trgm extension is available
+            if pg_trgm_available:
+                trigram_indexes = [
+                    "CREATE INDEX IF NOT EXISTS decisions_content_trgm ON decisions USING gin (content gin_trgm_ops)",
+                    "CREATE INDEX IF NOT EXISTS decisions_decision_trgm ON decisions USING gin (decision gin_trgm_ops)", 
+                    "CREATE INDEX IF NOT EXISTS decisions_title_trgm ON decisions USING gin (title gin_trgm_ops)"
+                ]
+                indexes_to_create.extend(trigram_indexes)
+            
+            # Add full-text search index
+            indexes_to_create.append("CREATE INDEX IF NOT EXISTS decisions_tsv_gin ON decisions USING gin (tsv)")
             
             for sql in indexes_to_create:
                 try:
