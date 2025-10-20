@@ -273,3 +273,30 @@ body {
   outline: none;
 }
 .askInput:focus { border-color: #2a3a7a; }
+
+/* Quick demo chips under composer */
+.suggestWrap { margin-top: 12px }
+.suggestTitle { color: var(--muted); font-size: 12px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px }
+.quickChips { display:flex; flex-wrap:wrap; gap:10px }
+.chipCard {
+  position: relative;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
+}
+.chipCard:hover {
+  transform: translateY(-1px);
+  border-color: #2a3a7a;
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+  background: linear-gradient(180deg, rgba(46,72,130,.25), rgba(20,30,60,.1));
+}
+.chipIcon { font-size: 14px }
+.chipText { white-space: nowrap }

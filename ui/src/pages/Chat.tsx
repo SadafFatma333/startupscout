@@ -137,8 +137,8 @@ export default function Chat() {
     setShowDemoCards(true); // Show demo cards after clearing history
   }
 
-  function showDemoCards() {
-    console.log('showDemoCards called');
+  function showDemoOverlay() {
+    console.log('showDemoOverlay called');
     setShowDemoCards(true);
   }
 
@@ -148,7 +148,7 @@ export default function Chat() {
         <h1 className="text-2xl font-bold text-gray-900">StartupScout Chat</h1>
         <div className="flex gap-2">
           <button
-            onClick={showDemoCards}
+            onClick={showDemoOverlay}
             className="text-sm px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             disabled={loading}
           >
@@ -201,6 +201,10 @@ export default function Chat() {
           disabled={loading || !input.trim()}
         >
           {loading ? "Sending..." : "Send"}
+          <DemoCards
+  onQuestionClick={handleDemoQuestion}
+  isVisible={showDemoCards}
+/>
         </button>
       </div>
     </section>
@@ -300,12 +304,6 @@ function MessageBubble({
           </div>
         )}
       </div>
-
-      <DemoCards 
-        onQuestionClick={handleDemoQuestion}
-        isVisible={showDemoCards}
-      />
-      {console.log('Chat render - showDemoCards:', showDemoCards)}
     </div>
   );
 }

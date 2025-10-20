@@ -28,6 +28,16 @@ export default function Chat() {
   const [busy, setBusy] = useState(false);
   const scrollerRef = useRef(null);
 
+  // Lightweight demo questions (non-intrusive chips)
+  const demoQs = [
+    { icon: "🚀", text: "What helped teams get their first 100 active users?" },
+    { icon: "💸", text: "How do early startups choose their first price?" },
+    { icon: "✍️", text: "What convinced investors to write the first check (pre-seed/seed)?" },
+    { icon: "🧭", text: "What small onboarding change improved sign-ups?" },
+    { icon: "📣", text: "How did founders get their first press or community attention?" },
+    { icon: "⭐", text: "What features did early users care about most?" },
+  ];
+
   // Hydrate from server history (best-effort)
   useEffect(() => {
     let cancelled = false;
@@ -98,6 +108,13 @@ export default function Chat() {
     api.clearHistory?.().catch(() => {});
   }
 
+  function onQuickAsk(q) {
+    if (busy) return;
+    setInput(q);
+    // send immediately for a smooth demo experience
+    setTimeout(() => onSend(), 0);
+  }
+
   const canSend = useMemo(() => input.trim().length > 0 && !busy, [input, busy]);
 
   return (
@@ -135,6 +152,28 @@ export default function Chat() {
           {busy ? "…" : "Ask"}
         </button>
       </form>
+
+      {/* Suggested prompts */}
+      <div className="suggestWrap">
+        <div className="suggestTitle">Suggested prompts</div>
+        <div className="quickChips">
+          {demoQs.map((item, i) => (
+            <button
+              key={i}
+              type="button"
+              className="chipCard"
+              onClick={() => onQuickAsk(item.text)}
+              disabled={busy}
+              title={item.text}
+            >
+              <span className="chipIcon" aria-hidden>
+                {item.icon}
+              </span>
+              <span className="chipText">{item.text}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
