@@ -221,12 +221,17 @@ def fix_schema():
             # Add full-text search index
             indexes_to_create.append("CREATE INDEX IF NOT EXISTS decisions_tsv_gin ON decisions USING gin (tsv)")
             
+            index_creation_results = []
             for sql in indexes_to_create:
                 try:
                     cur.execute(sql)
-                    print(f"Created index: {sql.split()[5]}")  # Extract index name
+                    index_name = sql.split()[5]
+                    print(f"Created index: {index_name}")
+                    index_creation_results.append(f"✅ {index_name}")
                 except Exception as e:
-                    print(f"Index creation failed (might already exist): {e}")
+                    index_name = sql.split()[5] if len(sql.split()) > 5 else "unknown"
+                    print(f"Index creation failed: {e}")
+                    index_creation_results.append(f"❌ {index_name}: {str(e)}")
             
             conn.commit()
             
@@ -265,7 +270,9 @@ def fix_schema():
                 "with_embeddings": with_embeddings,
                 "with_tsv": with_tsv,
                 "indexes": all_indexes,
-                "extensions": extensions
+                "extensions": extensions,
+                "index_creation_results": index_creation_results,
+                "pg_trgm_available": pg_trgm_available
             }
             
     except Exception as e:
