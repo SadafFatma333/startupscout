@@ -48,11 +48,14 @@ def _normalize(text: str) -> str:
 def _init_openai():
     global _openai_client
     if _openai_client is not None:
+        logger.info("Using existing OpenAI client")
         return _openai_client
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY not set but EMBEDDING_BACKEND=openai. Please set OPENAI_API_KEY environment variable.")
+    logger.info(f"Initializing OpenAI client with API key: {OPENAI_API_KEY[:10]}...")
     from openai import OpenAI  # Lazy import
     _openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    logger.info("OpenAI client initialized successfully")
     return _openai_client
 
 
@@ -74,9 +77,15 @@ def get_embedding_dim() -> int:
 # ------------------------------------------------------------------------------
 @lru_cache(maxsize=2048)
 def _embed_openai_cached(text: str) -> Tuple[List[float], str]:
-    client = _init_openai()
-    resp = client.embeddings.create(input=text, model=_OPENAI_MODEL)
-    return resp.data[0].embedding, _OPENAI_MODEL
+    try:
+        client = _init_openai()
+        logger.info(f"Making OpenAI API call for text: {text[:50]}...")
+        resp = client.embeddings.create(input=text, model=_OPENAI_MODEL)
+        logger.info(f"OpenAI API call successful, embedding length: {len(resp.data[0].embedding)}")
+        return resp.data[0].embedding, _OPENAI_MODEL
+    except Exception as e:
+        logger.error(f"OpenAI API call failed: {type(e).__name__}: {str(e)}")
+        raise
 
 
 @lru_cache(maxsize=2048)
@@ -107,12 +116,10 @@ def get_embedding(text: str) -> Tuple[List[float], str]:
         try:
             return _embed_openai_cached(norm)
         except Exception as e:
-            logger.warning("OpenAI embedding failed, falling back to local: %s", e)
-            try:
-                return _embed_local_cached(norm)
-            except Exception as e2:
-                logger.error("Local fallback also failed: %s", e2)
-                return [0.0] * _OPENAI_DIM, f"{_OPENAI_MODEL}-failed"
+            logger.error("OpenAI embedding failed: %s", e)
+            # Don't fall back to local embeddings with different dimensions
+            # Return zero vector with correct OpenAI dimensions
+            return [0.0] * _OPENAI_DIM, f"{_OPENAI_MODEL}-failed"
 
     # Local backend only
     try:
