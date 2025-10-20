@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://startupscout-production.up.railway.app";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://startupscout-production.up.railway.app";
 
 function authHeaders() {
   const token = localStorage.getItem("scout:token");
