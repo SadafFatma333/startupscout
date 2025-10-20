@@ -60,9 +60,8 @@ def _init_local_model():
     global _local_model
     if _local_model is not None:
         return _local_model
-    from sentence_transformers import SentenceTransformer  # Lazy import
-    logger.info(f"Loading local embedding model: {_LOCAL_MODEL}")
-    _local_model = SentenceTransformer(_LOCAL_MODEL)
+    logger.warning("Local embeddings disabled - using OpenAI embeddings only")
+    _local_model = "disabled"
     return _local_model
 
 
@@ -82,9 +81,9 @@ def _embed_openai_cached(text: str) -> Tuple[List[float], str]:
 
 @lru_cache(maxsize=2048)
 def _embed_local_cached(text: str) -> Tuple[List[float], str]:
-    model = _init_local_model()
-    vec = model.encode(text, show_progress_bar=False, convert_to_numpy=False)
-    return vec.tolist(), _LOCAL_MODEL
+    # Local embeddings disabled - this should not be called when EMBEDDING_BACKEND=openai
+    logger.error("Local embeddings called but disabled - check EMBEDDING_BACKEND setting")
+    return [0.0] * _LOCAL_DIM, f"{_LOCAL_MODEL}-disabled"
 
 
 # ------------------------------------------------------------------------------
