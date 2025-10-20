@@ -48,23 +48,47 @@ def require_env(var_name: str) -> str:
 # Database configuration
 # -----------------------
 
-if ENV == "prod":
-    # Railway PostgreSQL provides these standard variables
-    DB_CONFIG = {
-        "dbname": os.getenv("PGDATABASE") or require_env("DB_NAME"),
-        "user": os.getenv("PGUSER") or require_env("DB_USER"),
-        "password": os.getenv("PGPASSWORD") or require_env("DB_PASSWORD"),
-        "host": os.getenv("PGHOST") or require_env("DB_HOST"),
-        "port": int(os.getenv("PGPORT") or os.getenv("DB_PORT", 5432)),
-    }
-else:  # dev / test
-    DB_CONFIG = {
-        "dbname": os.getenv("DB_NAME", "startupscout"),
-        "user": os.getenv("DB_USER", "postgres"),
-        "password": os.getenv("DB_PASSWORD", "postgres"),
-        "host": os.getenv("DB_HOST", "localhost"),
-        "port": int(os.getenv("DB_PORT", 5432)),
-    }
+def parse_database_url(url: str) -> dict:
+    """Parse DATABASE_URL into individual components"""
+    if not url:
+        return {}
+    
+    # Handle postgresql:// format
+    if url.startswith("postgresql://"):
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        return {
+            "host": parsed.hostname,
+            "port": parsed.port or 5432,
+            "dbname": parsed.path.lstrip("/"),
+            "user": parsed.username,
+            "password": parsed.password,
+        }
+    return {}
+
+# Check for DATABASE_URL first (Neon, Railway, etc.)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    DB_CONFIG = parse_database_url(DATABASE_URL)
+else:
+    # Fall back to individual environment variables
+    if ENV == "prod":
+        # Railway PostgreSQL provides these standard variables
+        DB_CONFIG = {
+            "dbname": os.getenv("PGDATABASE") or require_env("DB_NAME"),
+            "user": os.getenv("PGUSER") or require_env("DB_USER"),
+            "password": os.getenv("PGPASSWORD") or require_env("DB_PASSWORD"),
+            "host": os.getenv("PGHOST") or require_env("DB_HOST"),
+            "port": int(os.getenv("PGPORT") or os.getenv("DB_PORT", 5432)),
+        }
+    else:  # dev / test
+        DB_CONFIG = {
+            "dbname": os.getenv("DB_NAME", "startupscout"),
+            "user": os.getenv("DB_USER", "postgres"),
+            "password": os.getenv("DB_PASSWORD", "postgres"),
+            "host": os.getenv("DB_HOST", "localhost"),
+            "port": int(os.getenv("DB_PORT", 5432)),
+        }
 
 # -----------------------
 # Embedding configuration
