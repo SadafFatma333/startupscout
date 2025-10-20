@@ -5,6 +5,12 @@ railway.toml
 # apprunner.yaml
 # deploy_aws.py
 
+# Large files that shouldn't be in repo
+ui/node_modules/
+*.db
+startupscout.db
+ingestion/startupscout.db
+
 # Python
 __pycache__/
 *.py[cod]
