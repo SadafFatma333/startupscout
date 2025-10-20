@@ -42,11 +42,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Explicit OPTIONS handler for CORS preflight
-@app.options("/{path:path}")
-async def options_handler(path: str):
-    return {"message": "OK"}
-
 # Routers
 app.include_router(search_router)
 app.include_router(auth_router)
@@ -540,3 +535,8 @@ def clear_cache_admin(x_api_key: str = Header(..., description="Admin API key"))
     cache_clear()
     logger.info("Cache cleared via admin endpoint.")
     return {"status": "ok", "message": "Cache cleared."}
+
+# Explicit OPTIONS handler for CORS preflight (must be last)
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    return {"message": "OK"}
