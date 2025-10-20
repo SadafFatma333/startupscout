@@ -80,6 +80,7 @@ export default function Chat() {
   }, [turns, loading]);
 
   const handleDemoQuestion = (question: string) => {
+    console.log('handleDemoQuestion called with:', question);
     setInput(question);
     setShowDemoCards(false);
   };
@@ -137,6 +138,7 @@ export default function Chat() {
   }
 
   function showDemoCards() {
+    console.log('showDemoCards called');
     setShowDemoCards(true);
   }
 
@@ -303,6 +305,7 @@ function MessageBubble({
         onQuestionClick={handleDemoQuestion}
         isVisible={showDemoCards}
       />
+      {console.log('Chat render - showDemoCards:', showDemoCards)}
     </div>
   );
 }

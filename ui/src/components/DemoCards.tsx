@@ -13,10 +13,20 @@ const DEMO_QUESTIONS = [
 ];
 
 const DemoCards: React.FC<DemoCardsProps> = ({ onQuestionClick, isVisible }) => {
-  if (!isVisible) return null;
+  console.log('DemoCards render:', { isVisible }); // Debug log
+  
+  if (!isVisible) {
+    console.log('DemoCards not visible, returning null');
+    return null;
+  }
+
+  console.log('DemoCards rendering cards');
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      style={{ zIndex: 9999 }}
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
         <div className="p-6">
           <div className="text-center mb-6">
@@ -32,7 +42,10 @@ const DemoCards: React.FC<DemoCardsProps> = ({ onQuestionClick, isVisible }) => 
             {DEMO_QUESTIONS.map((question, index) => (
               <button
                 key={index}
-                onClick={() => onQuestionClick(question)}
+                onClick={() => {
+                  console.log('Demo question clicked:', question);
+                  onQuestionClick(question);
+                }}
                 className="p-4 text-left bg-gradient-to-br from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-xl transition-all duration-200 hover:shadow-lg hover:scale-105 group"
               >
                 <div className="flex items-start space-x-3">
