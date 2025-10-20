@@ -35,11 +35,16 @@ def seed_database(json_path=None, wipe_existing=True):
             title TEXT NOT NULL,
             source TEXT,
             decision TEXT NOT NULL,
+            summary TEXT,
+            content TEXT,
+            comments TEXT,
             tags TEXT,
             stage TEXT,
+            url TEXT,
             embedding VECTOR({VECTOR_DIM}), -- pgvector column
             embedding_model TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
 
@@ -50,22 +55,53 @@ def seed_database(json_path=None, wipe_existing=True):
     for entry in data:
         try:
             cur.execute("""
-                INSERT INTO decisions (title, source, decision, tags, stage)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO decisions (title, source, decision, summary, content, comments, tags, stage, url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 entry["title"],
                 entry.get("source", ""),
                 entry["decision"],
+                entry.get("summary", ""),
+                entry.get("content", ""),
+                entry.get("comments", ""),
                 ",".join(entry["tags"]) if "tags" in entry else "",
-                entry.get("stage", "")
+                entry.get("stage", ""),
+                entry.get("url", "")
             ))
         except Exception as e:
             print(f"Error inserting entry {entry.get('title', 'Unknown')}: {e}")
 
+    # Generate embeddings for all records
+    print("Generating embeddings...")
+    from utils.embeddings import get_embedding
+    
+    cur.execute("SELECT id, title, decision, summary, content FROM decisions WHERE embedding IS NULL")
+    records = cur.fetchall()
+    
+    for record_id, title, decision, summary, content in records:
+        try:
+            # Combine text for embedding
+            text = f"{title} {decision}"
+            if summary:
+                text += f" {summary}"
+            if content:
+                text += f" {content}"
+            
+            embedding, model = get_embedding(text)
+            
+            # Update record with embedding
+            cur.execute(
+                "UPDATE decisions SET embedding = %s, embedding_model = %s WHERE id = %s",
+                (embedding, model, record_id)
+            )
+            
+        except Exception as e:
+            print(f"Error generating embedding for record {record_id}: {e}")
+    
     conn.commit()
     cur.close()
     conn.close()
-    print(f"Inserted {len(data)} records into PostgreSQL database.")
+    print(f"Inserted {len(data)} records into PostgreSQL database with embeddings.")
 
 if __name__ == "__main__":
     seed_database()
