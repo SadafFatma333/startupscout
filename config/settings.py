@@ -49,12 +49,13 @@ def require_env(var_name: str) -> str:
 # -----------------------
 
 if ENV == "prod":
+    # Railway PostgreSQL provides these standard variables
     DB_CONFIG = {
-        "dbname": require_env("DB_NAME"),
-        "user": require_env("DB_USER"),
-        "password": require_env("DB_PASSWORD"),
-        "host": require_env("DB_HOST"),
-        "port": int(os.getenv("DB_PORT", 5432)),
+        "dbname": os.getenv("PGDATABASE") or require_env("DB_NAME"),
+        "user": os.getenv("PGUSER") or require_env("DB_USER"),
+        "password": os.getenv("PGPASSWORD") or require_env("DB_PASSWORD"),
+        "host": os.getenv("PGHOST") or require_env("DB_HOST"),
+        "port": int(os.getenv("PGPORT") or os.getenv("DB_PORT", 5432)),
     }
 else:  # dev / test
     DB_CONFIG = {
@@ -72,9 +73,7 @@ else:  # dev / test
 EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "minilm")
 
 if EMBEDDING_BACKEND == "openai":
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Make optional during startup
-    if not OPENAI_API_KEY:
-        print("WARNING: OPENAI_API_KEY not set but EMBEDDING_BACKEND=openai. OpenAI embeddings will fail at runtime.")
+    OPENAI_API_KEY = require_env("OPENAI_API_KEY")
 else:
     OPENAI_API_KEY = None
 
