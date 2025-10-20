@@ -72,7 +72,9 @@ else:  # dev / test
 EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "minilm")
 
 if EMBEDDING_BACKEND == "openai":
-    OPENAI_API_KEY = require_env("OPENAI_API_KEY")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Make optional during startup
+    if not OPENAI_API_KEY:
+        print("WARNING: OPENAI_API_KEY not set but EMBEDDING_BACKEND=openai. OpenAI embeddings will fail at runtime.")
 else:
     OPENAI_API_KEY = None
 

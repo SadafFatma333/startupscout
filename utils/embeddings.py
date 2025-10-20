@@ -50,7 +50,7 @@ def _init_openai():
     if _openai_client is not None:
         return _openai_client
     if not OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY not set but EMBEDDING_BACKEND=openai.")
+        raise RuntimeError("OPENAI_API_KEY not set but EMBEDDING_BACKEND=openai. Please set OPENAI_API_KEY environment variable.")
     from openai import OpenAI  # Lazy import
     _openai_client = OpenAI(api_key=OPENAI_API_KEY)
     return _openai_client
