@@ -28,18 +28,30 @@ from utils.auth import verify_jwt
 app = FastAPI(title="StartupScout API", version="1.0.0")
 logger = setup_logger("startupscout.api")
 
-# CORS
+# CORS - Best Practice Configuration
 _default_origins = ["http://127.0.0.1:5173", "http://localhost:5173"]
 _allowed_origins = os.getenv("ALLOWED_ORIGINS")
 allow_origins = (
     [o.strip() for o in _allowed_origins.split(",")] if _allowed_origins else _default_origins
 )
+
+# Add CORS middleware with comprehensive configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "X-Auth-Token",
+    ],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight for 10 minutes
 )
 
 # Routers
@@ -536,7 +548,3 @@ def clear_cache_admin(x_api_key: str = Header(..., description="Admin API key"))
     logger.info("Cache cleared via admin endpoint.")
     return {"status": "ok", "message": "Cache cleared."}
 
-# Explicit OPTIONS handler for CORS preflight (must be last)
-@app.options("/{path:path}")
-async def options_handler(path: str):
-    return {"message": "OK"}
