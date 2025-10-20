@@ -42,6 +42,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Explicit OPTIONS handler for CORS preflight
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    return {"message": "OK"}
+
 # Routers
 app.include_router(search_router)
 app.include_router(auth_router)
