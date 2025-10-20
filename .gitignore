@@ -1,3 +1,17 @@
+# Railway deployment files
+railway.toml
+startup.py
+startup-simple.py
+requirements.tiny.txt
+requirements.minimal.txt
+requirements.ultra-minimal.txt
+
+# AWS deployment files (keep these)
+# apprunner.yaml
+# Dockerfile.aws
+# docker-compose.aws.yml
+# deploy_aws.py
+
 # Python
 __pycache__/
 *.py[cod]
