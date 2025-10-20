@@ -176,6 +176,19 @@ def fix_schema():
             for sql in columns_to_add:
                 cur.execute(sql)
             
+            # Create vector index for fast similarity search (if not exists)
+            try:
+                cur.execute("CREATE INDEX IF NOT EXISTS decisions_embedding_idx ON decisions USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)")
+                print("Vector index created successfully")
+            except Exception as e:
+                print(f"Vector index creation failed (might already exist): {e}")
+                # Try alternative index type
+                try:
+                    cur.execute("CREATE INDEX IF NOT EXISTS decisions_embedding_idx ON decisions USING hnsw (embedding vector_cosine_ops)")
+                    print("HNSW vector index created successfully")
+                except Exception as e2:
+                    print(f"Alternative vector index also failed: {e2}")
+            
             conn.commit()
             
             # Check current schema
@@ -191,11 +204,20 @@ def fix_schema():
             cur.execute("SELECT COUNT(*) FROM decisions")
             count = cur.fetchone()[0]
             
+            # Check for indexes on embedding column
+            cur.execute("""
+                SELECT indexname, indexdef 
+                FROM pg_indexes 
+                WHERE tablename = 'decisions' AND indexdef LIKE '%embedding%'
+            """)
+            indexes = cur.fetchall()
+            
             return {
                 "status": "success",
                 "message": "Schema updated successfully",
                 "columns": [{"name": col[0], "type": col[1]} for col in columns],
-                "record_count": count
+                "record_count": count,
+                "vector_indexes": [{"name": idx[0], "definition": idx[1]} for idx in indexes]
             }
             
     except Exception as e:
