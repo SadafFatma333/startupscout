@@ -28,6 +28,14 @@ from utils.auth import verify_jwt
 app = FastAPI(title="StartupScout API", version="1.0.0")
 logger = setup_logger("startupscout.api")
 
+# Startup logging
+logger.info("=" * 60)
+logger.info("StartupScout API Starting Up")
+logger.info(f"Environment: {os.getenv('ENV', 'dev')}")
+logger.info(f"Embedding Backend: {os.getenv('EMBEDDING_BACKEND', 'unknown')}")
+logger.info(f"OpenAI API Key: {'Set' if os.getenv('OPENAI_API_KEY') else 'Not Set'}")
+logger.info("=" * 60)
+
 # CORS - Best Practice Configuration
 _default_origins = ["http://127.0.0.1:5173", "http://localhost:5173"]
 _allowed_origins = os.getenv("ALLOWED_ORIGINS")
@@ -92,14 +100,18 @@ def _build_conninfo(cfg: Dict[str, Any]) -> str:
 
 POOL: Optional[ConnectionPool] = None
 try:
+    conninfo = _build_conninfo(DB_CONFIG)
+    logger.info(f"Connecting to database: {DB_CONFIG.get('host', 'unknown')}:{DB_CONFIG.get('port', 5432)}/{DB_CONFIG.get('dbname', 'unknown')}")
+    logger.info(f"Database URL: {os.getenv('DATABASE_URL', 'Not set')[:50]}...")
+    
     POOL = ConnectionPool(
-        conninfo=_build_conninfo(DB_CONFIG),
+        conninfo=conninfo,
         min_size=int(os.getenv("DB_POOL_MIN", "1")),
         max_size=int(os.getenv("DB_POOL_MAX", "10")),
         timeout=int(os.getenv("DB_POOL_TIMEOUT_SEC", "10")),
         max_idle=int(os.getenv("DB_POOL_MAX_IDLE", "30")),
     )
-    logger.info("Database connection pool initialized.")
+    logger.info("Database connection pool initialized successfully.")
 except Exception as e:
     logger.exception("Failed to initialize DB pool: %s", e)
 
@@ -155,6 +167,17 @@ def health_check():
     uptime = round(time.time() - START_TIME, 1)
     return {"status": "ok", "uptime_sec": uptime, "db": db_status}
 
+
+@app.post("/import-local-data")
+def import_local_data():
+    """Import exact data from local database to production database."""
+    try:
+        # This endpoint will be called with the exported data
+        # For now, let's create a simple endpoint that can be called
+        return {"message": "Import endpoint ready - call with POST data"}
+    except Exception as e:
+        logger.error(f"Import failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 @app.post("/fix-schema")
 def fix_schema():
@@ -232,6 +255,19 @@ def fix_schema():
                     index_name = sql.split()[5] if len(sql.split()) > 5 else "unknown"
                     print(f"Index creation failed: {e}")
                     index_creation_results.append(f"❌ {index_name}: {str(e)}")
+            
+            # Populate TSV data for full-text search
+            try:
+                print("Populating TSV data...")
+                cur.execute("""
+                    UPDATE decisions 
+                    SET tsv = to_tsvector('english', coalesce(title,'') || ' ' || coalesce(decision,'') || ' ' || coalesce(content,''))
+                    WHERE tsv IS NULL
+                """)
+                tsv_updated = cur.rowcount
+                print(f"Updated {tsv_updated} records with TSV data")
+            except Exception as e:
+                print(f"TSV population failed: {e}")
             
             conn.commit()
             
@@ -348,6 +384,8 @@ def ask(
     top_k: int = Query(5, ge=1, le=10, description="Top-K similar items to return"),
     x_auth_token: Optional[str] = Header(default=None, convert_underscores=False),
 ):
+    logger.info(f"ASK REQUEST: '{question}' (top_k={top_k})")
+    
     # Normalize input
     q = (question or "").strip()
     if not q:
@@ -355,6 +393,7 @@ def ask(
     if len(q) > 1000:
         q = q[:1000]
     q = " ".join(q.split())
+    logger.info(f"Normalized question: '{q}'")
 
     # Optional user id
     user_id: Optional[int] = None
@@ -363,12 +402,15 @@ def ask(
         if payload:
             try:
                 user_id = int(payload["sub"])
+                logger.info(f"Authenticated user: {user_id}")
             except Exception:
                 user_id = None
 
     # Embedding
+    logger.info("Generating embedding...")
     try:
-        q_vec, _ = get_embedding(q)
+        q_vec, model = get_embedding(q)
+        logger.info(f"Embedding generated: {len(q_vec) if q_vec else 0} dimensions, model: {model}")
         if not q_vec:
             raise ValueError("Empty embedding returned.")
     except Exception as e:
@@ -376,22 +418,29 @@ def ask(
         raise HTTPException(status_code=500, detail="Embedding generation failed.")
 
     if POOL is None:
+        logger.error("Database pool is None!")
         raise HTTPException(status_code=503, detail="Database unavailable.")
 
     # Recall + floors
     fetch_k = min(20, max(top_k * 3, top_k + 7))
     min_sim = float(os.getenv("MIN_SIMILARITY", "0.35"))
     rrf_k = int(os.getenv("RRF_K", "60"))
+    logger.info(f"Search parameters: fetch_k={fetch_k}, min_sim={min_sim}, rrf_k={rrf_k}")
 
     kws = derive_keywords(q)
     kw_patterns = [f"%{kw}%" for kw in kws][:8] or [f"%{q[:32]}%"]
+    logger.info(f"Derived keywords: {kws}")
+    logger.info(f"Keyword patterns: {kw_patterns}")
 
     # Hybrid candidate fetch: vector + BM25 (or ts_rank) + ILIKE
     try:
+        logger.info("Starting database queries...")
         with POOL.connection() as conn, conn.cursor() as cur:
             _prepare_session(cur)
+            logger.info("Database session prepared")
 
             # Vector ANN
+            logger.info("Executing vector similarity search...")
             cur.execute(
                 """
                 SELECT
@@ -405,9 +454,11 @@ def ask(
                 (q_vec, q_vec, fetch_k),
             )
             vec_rows = cur.fetchall()
+            logger.info(f"Vector search returned {len(vec_rows)} results")
 
             # BM25 (if available) else ts_rank
             has_bm25 = _bm25_available(cur)
+            logger.info(f"BM25 available: {has_bm25}")
             tsv, tsq = _build_tsquery(cur, q)
             if has_bm25:
                 bm25_sql = f"""
@@ -432,10 +483,13 @@ def ask(
                     LIMIT %s;
                 """
             # tsq appears twice → two %s plus LIMIT
+            logger.info("Executing BM25/ts_rank search...")
             cur.execute(bm25_sql, (q, q, fetch_k))
             bm25_rows = cur.fetchall()
+            logger.info(f"BM25/ts_rank search returned {len(bm25_rows)} results")
 
             # Keyword ILIKE (broad)
+            logger.info("Executing keyword ILIKE search...")
             cur.execute(
                 """
                 SELECT
@@ -449,6 +503,10 @@ def ask(
                 (kw_patterns, kw_patterns, kw_patterns, fetch_k),
             )
             kw_rows = cur.fetchall()
+            logger.info(f"Keyword search returned {len(kw_rows)} results")
+            
+            logger.info(f"Total results: vec={len(vec_rows)}, bm25={len(bm25_rows)}, kw={len(kw_rows)}")
+            
     except DatabaseError as e:
         logger.error("Database error in /ask: %s", e)
         raise HTTPException(status_code=500, detail="Database query failed.")
@@ -457,6 +515,7 @@ def ask(
         raise HTTPException(status_code=500, detail="Database query failed.")
 
     if not (vec_rows or bm25_rows or kw_rows):
+        logger.warning("No results found from any search method!")
         return {"question": q, "answer": "No related startup cases found.", "references": []}
 
     # Build rank maps for RRF
@@ -502,6 +561,7 @@ def ask(
 
     # Cross-encoder inputs
     candidates = list(merged.values())
+    logger.info(f"Processing {len(candidates)} candidates for reranking")
     blobs: List[Tuple[str, str]] = []
     for c in candidates:
         r = c["row"]
@@ -509,8 +569,10 @@ def ask(
         blob = " ".join(t for t in (decision, summary, content) if t)[:2000]
         blobs.append((title or "", blob or ""))
 
+    logger.info("Starting cross-encoder reranking...")
     try:
         ce_scores = cross_rerank(q, blobs)  # 0..1 list aligned to candidates
+        logger.info(f"Cross-encoder reranking completed, scores: {[f'{s:.3f}' for s in ce_scores[:5]]}")
     except Exception as e:
         logger.warning("Cross-encoder rerank failed, falling back to zeros: %s", e)
         ce_scores = [0.0] * len(candidates)
@@ -521,6 +583,7 @@ def ask(
         return 1.0 / (rrf_k + rank)
 
     # Score and rank
+    logger.info("Calculating final scores...")
     scored: List[Tuple[float, tuple]] = []
     for (c, ce) in zip(candidates, ce_scores):
         r = c["row"]
@@ -537,12 +600,20 @@ def ask(
         scored.append((score, r))
 
     scored.sort(key=lambda x: x[0], reverse=True)
+    logger.info(f"Top 3 scores: {[f'{s[0]:.3f}' for s in scored[:3]]}")
+    
     rows = [r for _, r in scored[:max(top_k * 2, top_k + 3)]]
+    logger.info(f"Candidates before similarity filter: {len(rows)}")
 
     # Real similarity floor (fixes earlier 'or True')
     rows = [r for r in rows if float(r[10]) >= min_sim]
+    logger.info(f"Candidates after similarity filter (min_sim={min_sim}): {len(rows)}")
+    
     rows = rows[:top_k]
+    logger.info(f"Final selected rows: {len(rows)}")
+    
     if not rows:
+        logger.warning(f"No rows passed similarity threshold (min_sim={min_sim})")
         return {"question": q, "answer": "Not enough relevant context found.", "references": []}
 
     # Build context
