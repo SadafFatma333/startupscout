@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "cd ui && npm install && npm run build",
   "outputDirectory": "ui/dist",
   "framework": "vite",
   "rewrites": [
