@@ -1,9 +1,0 @@
-{
-  "name": "startupscout",
-  "version": "1.0.0",
-  "description": "StartupScout RAG application",
-  "scripts": {
-    "build": "cd ui && npm install && npm run build"
-  },
-  "private": true
-}
