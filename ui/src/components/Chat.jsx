@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 import { clsx } from "clsx";
+import AnswerPanel from "./AnswerPanel";
+import SkeletonAnswer from "./SkeletonAnswer";
 
 const LOCAL_KEY = "scout:history";
 const MAX_TURNS = 100;
@@ -131,10 +133,22 @@ export default function Chat() {
       {error ? <div className="error">{error}</div> : null}
 
       <div className="chatScroll" ref={scrollerRef}>
-        {turns.map((t, idx) => (
-          <Message key={t?.ts ?? idx} role={t.role} content={t.content} refs={t.refs} />
-        ))}
-        {busy ? <Typing /> : null}
+        {turns.map((t, idx) => {
+          if (t.role === "assistant") {
+            return (
+              <div key={t?.ts ?? idx} className="bubbleRow bot">
+                <AnswerPanel content={t.content} references={t.refs || t.references || []} answerId={`answer-${t?.ts ?? idx}`} />
+              </div>
+            );
+          }
+          // keep existing user bubble:
+          return <Message key={t?.ts ?? idx} role={t.role} content={t.content} refs={t.refs} />;
+        })}
+        {busy ? (
+          <div className="bubbleRow bot">
+            <SkeletonAnswer />
+          </div>
+        ) : null}
       </div>
 
       <form className="composer" onSubmit={onSend}>
@@ -180,85 +194,14 @@ export default function Chat() {
 
 function Message({ role, content, refs }) {
   const me = role === "user";
-  const refsArr = Array.isArray(refs) ? refs : [];
-
+  if (!me) return null; // assistant handled by AnswerCard
+  
   return (
-    <div className={clsx("bubbleRow", me ? "me" : "bot")}>
-      <div className={clsx("bubble", me ? "bubbleMe" : "bubbleBot")}>
+    <div className="bubbleRow me">
+      <div className="bubble bubbleMe">
         <div className="content">{content}</div>
-
-        {refsArr.length > 0 ? (
-          <div className="refs">
-            <span className="muted tiny">Sources</span>
-            <ul>
-              {refsArr.map((r, i) => {
-                // Back-compat: older cached refs might be tuples like [title, ...]
-                if (Array.isArray(r)) {
-                  const [title] = r;
-                  return (
-                    <li key={`legacy-${i}`} className="tiny">
-                      {String(title || "(untitled)")}
-                    </li>
-                  );
-                }
-
-                // Normalized object shape from API
-                const title = r?.title ?? "(untitled)";
-                const url = r?.url ?? null;
-                const source = r?.source ?? null;
-                const stage = r?.stage ?? null;
-                const sim =
-                  typeof r?.similarity === "number"
-                    ? r.similarity
-                    : (typeof r?.similarity === "string" ? Number(r.similarity) : null);
-                const tags = Array.isArray(r?.tags) ? r.tags : [];
-
-                return (
-                  <li key={url ?? r?.id ?? `${title}-${i}`} className="tiny">
-                    <div className="ref-title">
-                      {url ? (
-                        <a href={url} target="_blank" rel="noreferrer">
-                          {title}
-                        </a>
-                      ) : (
-                        title
-                      )}
-                    </div>
-                    <div className="ref-meta muted">
-                      {source && <span>{source}</span>}
-                      {stage && <span> • {stage}</span>}
-                      {typeof sim === "number" && !Number.isNaN(sim) && (
-                        <span> • sim {sim.toFixed(2)}</span>
-                      )}
-                    </div>
-                    {!!tags.length && (
-                      <div className="ref-tags">
-                        {tags.map((t) => (
-                          <span key={t} className="tag">
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ) : null}
       </div>
     </div>
   );
 }
 
-function Typing() {
-  return (
-    <div className="bubbleRow bot">
-      <div className="bubble bubbleBot typing">
-        <span className="dot" />
-        <span className="dot" />
-        <span className="dot" />
-      </div>
-    </div>
-  );
-}
